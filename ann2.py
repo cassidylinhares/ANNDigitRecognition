@@ -14,20 +14,22 @@ def sigmoid_derivative(x):
 class NeuralNetwork:
     def __init__(self, x, y):
         self.input = x
-        self.weights1 = np.random.rand(self.input.shape[1], 40)
+        self.weights1 = np.random.rand(45, 1)
         self.weights2 = np.random.randint(10, size=(40, 1)).astype('float64')
         self.y = y
         self.output = np.zeros(self.y.shape)
 
     def feedforward(self):
-        # 40x40 -> prediction
-        self.prediction = sigmoid(np.dot(self.input, self.weights1))
-        # 40x1 -> prediction
-        self.output = sigmoid(np.dot(self.prediction, self.weights2))
-        # print('Prediction: ', self.prediction)
+        self.prediction = sigmoid(
+            np.dot(self.input, self.weights1))  # 40x1 predictions
 
-    # def mean_square_error(self):
-    #     np.square(self.prediction - self.y)
+        # self.output = sigmoid(np.dot(self.prediction, self.weights2))
+
+    def mean_square_error(self):
+        np.square(self.prediction - self.y)
+
+    def derivative():
+        return
 
     def backprop(self):
         # application of the chain rule to find derivative of the loss function with respect to weights2 and weights1
@@ -55,7 +57,7 @@ if __name__ == "__main__":
 
     for i in range(epochs):
         nn.feedforward()
-        # print(f"Prediction: {nn.prediction}; Error:")
+        print(f"Prediction: {nn.prediction}; Error: {nn.mean_square_error()};")
         nn.backprop()
 
     print(nn.output.transpose())
