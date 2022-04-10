@@ -59,18 +59,18 @@ def one_hot(Y):
 def backward_prop(Z1, A1, Z2, A2, weight1, weight2, X, Y):
     one_hot_Y = one_hot(Y)
     dZ2 = A2 - one_hot_Y
-    dW2 = 1 / m * dZ2.dot(A1.T)
+    derivativeWeight2 = 1 / m * dZ2.dot(A1.T)
     db2 = 1 / m * np.sum(dZ2)
     dZ1 = weight2.T.dot(dZ2) * ReLU_deriv(Z1)
-    dW1 = 1 / m * dZ1.dot(X.T)
+    derivativeWeight1 = 1 / m * dZ1.dot(X.T)
     db1 = 1 / m * np.sum(dZ1)
-    return dW1, db1, dW2, db2
+    return derivativeWeight1, db1, derivativeWeight2, db2
 
 
-def update_params(weight1, bias1, weight2, bias2, dW1, db1, dW2, db2, alpha):
-    weight1 = weight1 - alpha * dW1
+def update_params(weight1, bias1, weight2, bias2, derivativeWeight1, db1, derivativeWeight2, db2, alpha):
+    weight1 = weight1 - alpha * derivativeWeight1
     bias1 = bias1 - alpha * db1
-    weight2 = weight2 - alpha * dW2
+    weight2 = weight2 - alpha * derivativeWeight2
     bias2 = bias2 - alpha * db2
     return weight1, bias1, weight2, bias2
 
@@ -90,14 +90,14 @@ def gradient_descent(X, Y, alpha, iterations):
     weight1, bias1, weight2, bias2 = init_params()
     for i in range(iterations):
         Z1, A1, Z2, A2 = forward_prop(weight1, bias1, weight2, bias2, X)
-        dW1, db1, dW2, db2 = backward_prop(
+        derivativeWeight1, db1, derivativeWeight2, db2 = backward_prop(
             Z1, A1, Z2, A2, weight1, weight2, X, Y)
         weight1, bias1, weight2, bias2 = update_params(
-            weight1, bias1, weight2, bias2, dW1, db1, dW2, db2, alpha)
+            weight1, bias1, weight2, bias2, derivativeWeight1, db1, derivativeWeight2, db2, alpha)
         if i % 10 == 0:
             print("Epcoh: ", i)
             predictions = get_predictions(A2)
-            print(get_accuracy(predictions, Y))
+            print(f"Accuracy: {get_accuracy(predictions, Y)}")
     return weight1, bias1, weight2, bias2
 
 
@@ -116,7 +116,7 @@ def test_prediction(index, weight1, bias1, weight2, bias2):
         X_train[:, index, None], weight1, bias1, weight2, bias2)
     label = Y_train[index]
     print("Prediction: ", prediction)
-    print("Label: ", label)
+    print("Actual: ", label)
 
 
 if __name__ == '__main__':
@@ -125,10 +125,12 @@ if __name__ == '__main__':
     w1, b1, w2, b2 = gradient_descent(
         X_train, Y_train, learn_rate, epoch)
 
-    test_prediction(0, w1, b1, w2, b2)
-    test_prediction(1, w1, b1, w2, b2)
-    test_prediction(2, w1, b1, w2, b2)
-    test_prediction(3, w1, b1, w2, b2)
+    print(f"Weights used: {w1} {w2}")
 
-    test_set_predictions = make_predictions(X_test, w1, b1, w2, b2)
-    get_accuracy(test_set_predictions, Y_test)
+    # test_prediction(0, w1, b1, w2, b2)
+    # test_prediction(1, w1, b1, w2, b2)
+    # test_prediction(2, w1, b1, w2, b2)
+    # test_prediction(3, w1, b1, w2, b2)
+
+    test_prediction_set = make_predictions(X_test, w1, b1, w2, b2)
+    get_accuracy(test_prediction_set, Y_test)
