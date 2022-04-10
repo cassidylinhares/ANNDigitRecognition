@@ -8,7 +8,7 @@ y = pd.read_excel(excel, 'Y', header=None)
 
 # print(len(dataset.T), dataset.shape[1])
 # Constants
-epochs = 100  # run 20x
+epochs = 1500  # run 20x
 neurons = 5
 num_layers = 3  # input, hidden, output
 num_rows = len(dataset)  # 40
@@ -99,12 +99,6 @@ def train(alpha):
     weights, biases = init_network()
     y2 = init_back_prop()
 
-    # _, layers, dots = forward_propagation(dataset, weights, biases)
-    # delta1 = y2 - layers[-1]
-    # delta2 = np.dot(delta1, weights[-1].T) * layers[0]*(1-layers[0])
-    # w1 = np.dot(delta2.T, pd.DataFrame(layers[0])) * 0.01
-    # w2 = np.dot(delta1.T, pd.DataFrame(layers[-1])) * 0.01
-    # weights = [w1, w2]
     cost_list = []
     for _ in range(epochs):
         weights, cost = back_propagation(dataset, weights, biases, y2, alpha)
@@ -125,5 +119,6 @@ def accuracy_function(weights, biases, y2):
 
 
 if __name__ == '__main__':
+    # print(np.array(dataset))
     weights, biases, y2 = train(0.01)
     accuracy_function(weights, biases, y2)
