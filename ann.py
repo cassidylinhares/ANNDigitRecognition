@@ -1,176 +1,161 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
 import random
-
-excel = pd.ExcelFile('data.xlsx')
-
-X_train = np.array(pd.read_excel(excel, 'X', header=None)).T
-Y_train = np.array(pd.read_excel(excel, 'Y', header=None)).T
+import numpy as np
+import pandas as pd
+from matplotlib import pyplot as plt
 
 
-def tanh(x):
-    return np.tanh(x)
+def plot_cost_epoch(cost, epoch):
+    plt.plot(epoch, cost)
+    plt.xlabel('Sum Square Error')
+    plt.ylabel('Epoch')
+
+    plt.show()
+
+
+def sigmoid(x):
+    return (1.0/(1 + np.exp(-x)))
+
+
+def sigmoid_derivative(x):
+    # print(x)
+    return (x * (1.0 - x))
 
 
 def relu(x):
     return np.maximum(x, 0)
 
 
+def relu_derivative(x):
+    return x > 0
+
+
 def softmax(x):
-    expX = np.exp(x)
-    return expX/np.sum(expX, axis=0)
+    return np.exp(x) / np.sum(np.exp(x), axis=0)
 
 
-def derivative_tanh(x):
-    return (1 - np.power(np.tanh(x), 2))
+class NeuralNetwork:
+    def __init__(self, x, y, neurons_x, neurons_hidden, neurons_y, epoch, alpha):
+        self.input = x.T  # 40x45 -> 45x40
+        self.y = y.T  # 40x10 -> 10x40
+
+        self.neurons_x = neurons_x
+        self.neurons_hidden = neurons_hidden
+        self.neurons_y = neurons_y
+
+        self.learning_rate = alpha
+        self.epoch = epoch
+
+        self.weights1 = np.random.rand(neurons_hidden, neurons_x)-0.3  # 5x45
+        self.weights2 = np.random.rand(neurons_y, neurons_hidden)-0.3  # 10x5
+
+        self.bias1 = np.zeros((neurons_hidden, 1))
+        self.bias2 = np.zeros((neurons_y, 1))
+
+    # make predictions using inner product
+    def forward_propagation(self, input):
+        # 5x45.45x40 or 5x45.
+        self.z1 = np.dot(self.weights1, input) + self.bias1
+        self.a1 = relu(self.z1)  # 5x40
+
+        self.z2 = np.dot(self.weights2, self.a1) + self.bias2  # 10x5.5x40
+        self.a2 = softmax(self.z2)  # 10x40
+
+    def cost_function(self):
+        return -(1/self.y.shape[1]) * np.sum(self.y * np.log(self.a2))
+
+    def sum_square_cost(self):
+        return np.sum(np.square(self.y-self.a2))
+
+    # d is the derivative aka gradient to find local min by outputting the amount to step (gradient) and direction
+    def backward_propagation(self):
+        observations = 1/self.input.shape[1]  # 40
+
+        d_z2 = self.a2 - self.y  # 10x40
+        self.d_weights2 = observations * np.dot(d_z2, self.a1.T)  # 10x40.40x5
+        self.d_bias2 = observations * \
+            np.sum(d_z2, axis=1, keepdims=True)  # sum x1
+
+        d_z1 = observations * \
+            np.dot(self.d_weights2.T, d_z2) * \
+            relu_derivative(self.a1)  # 5x10.10x40
+        self.d_weights1 = observations * \
+            np.dot(d_z1, self.input.T)  # 5x40.40x45
+        self.d_bias1 = observations * \
+            np.sum(d_z1, axis=1, keepdims=True)  # sum x1
+
+    def update_weights_bias(self):
+        self.weights1 = self.weights1 - (self.d_weights1 * self.learning_rate)
+        self.bias1 = self.bias1 - (self.d_bias1 * self.learning_rate)
+        self.weights2 = self.weights2 - (self.d_weights2 * self.learning_rate)
+        self.bias2 = self.bias2 - (self.d_bias2 * self.learning_rate)
+
+    # get predictions (forward) find error and adjust weights (back prop) and repeat
+    def model(self, input):
+        cost_list = []
+        sse_list = []
+        for i in range(self.epoch):
+            self.forward_propagation(input)
+            cost = self.cost_function()
+            sse = self.sum_square_cost()
+            self.backward_propagation()
+            self.update_weights_bias()
+
+            cost_list.append(cost)
+            sse_list.append(sse)
+            if i % 10 == 0:
+                print(f"Cost at Epoch {i}: {cost}")
+
+        return cost_list, sse_list
+
+    # get accuracy of predictions
+    def accuracy_function(self, input, output):
+        self.forward_propagation(input)
+        predictions = np.argmax(self.a2, 0)
+        actual = np.argmax(output, 0)
+
+        self.accuracy = np.mean(predictions == actual)*100
 
 
-def derivative_relu(x):
-    return np.array(x > 0, dtype=np.float32)
+if __name__ == "__main__":
+    # open data
+    excel = pd.ExcelFile('data.xlsx')
 
+    x_train = pd.read_excel(excel, 'x_train', header=None)
+    y_train = pd.read_excel(excel, 'y_train', header=None)
 
-def initialize_parameters(n_x, n_h, n_y):
-    w1 = np.random.randn(n_h, n_x)*0.01
-    b1 = np.zeros((n_h, 1))
+    x_test = pd.read_excel(excel, 'x_test', header=None)
+    y_test = pd.read_excel(excel, 'y_test', header=None)
 
-    w2 = np.random.randn(n_y, n_h)*0.01
-    b2 = np.zeros((n_y, 1))
+    X_train = np.array(x_train)
+    Y_train = np.array(y_train)
 
-    parameters = {
-        "w1": w1,
-        "b1": b1,
-        "w2": w2,
-        "b2": b2
-    }
+    X_test = np.array(x_test).T
+    Y_test = np.array(y_test).T
 
-    return parameters
+    epoch = 3000
+    e = [i for i in range(1, epoch+1)]
 
+    # define and init network
+    nn = NeuralNetwork(
+        X_train,
+        Y_train,
+        neurons_x=45,
+        neurons_hidden=5,
+        neurons_y=10,
+        epoch=epoch,
+        alpha=0.06
+    )
 
-def forward_propagation(x, parameters):
+    _, sse = nn.model(nn.input)
 
-    w1 = parameters['w1']
-    b1 = parameters['b1']
-    w2 = parameters['w2']
-    b2 = parameters['b2']
+    nn.accuracy_function(nn.input, nn.y)
+    print(f"Training Accuracy: {nn.accuracy}%")
 
-    z1 = np.dot(w1, x) + b1
-    a1 = tanh(z1)
+    nn.accuracy_function(X_test, Y_test)
+    print(f"Test Accuracy: {nn.accuracy}%")
 
-    z2 = np.dot(w2, a1) + b2
-    a2 = softmax(z2)
+    # index = random.randrange(0, X_test.shape[1])
+    # plt.imshow(X_train.T[:, 9].reshape(9, 5))
+    # plt.show()
 
-    forward_cache = {
-        "z1": z1,
-        "a1": a1,
-        "z2": z2,
-        "a2": a2
-    }
-
-    return forward_cache
-
-
-def cost_function(a2, y):
-    m = y.shape[1]
-
-    cost = -(1/m)*np.sum(y*np.log(a2))
-
-    #cost = -(1/m)*np.sum(np.sum(y*np.log(a2, 0), 1))
-
-    return cost
-
-
-def backward_prop(x, y, parameters, forward_cache):
-
-    w1 = parameters['w1']
-    b1 = parameters['b1']
-    w2 = parameters['w2']
-    b2 = parameters['b2']
-
-    a1 = forward_cache['a1']
-    a2 = forward_cache['a2']
-
-    m = x.shape[1]
-
-    dz2 = (a2 - y)
-    dw2 = (1/m)*np.dot(dz2, a1.T)
-    db2 = (1/m)*np.sum(dz2, axis=1, keepdims=True)
-
-    dz1 = (1/m)*np.dot(w2.T, dz2)*derivative_tanh(a1)
-    dw1 = (1/m)*np.dot(dz1, x.T)
-    db1 = (1/m)*np.sum(dz1, axis=1, keepdims=True)
-
-    gradients = {
-        "dw1": dw1,
-        "db1": db1,
-        "dw2": dw2,
-        "db2": db2
-    }
-
-    return gradients
-
-
-def update_parameters(parameters, gradients, learning_rate):
-
-    w1 = parameters['w1']
-    b1 = parameters['b1']
-    w2 = parameters['w2']
-    b2 = parameters['b2']
-
-    dw1 = gradients['dw1']
-    db1 = gradients['db1']
-    dw2 = gradients['dw2']
-    db2 = gradients['db2']
-
-    w1 = w1 - learning_rate*dw1
-    b1 = b1 - learning_rate*db1
-    w2 = w2 - learning_rate*dw2
-    b2 = b2 - learning_rate*db2
-
-    parameters = {
-        "w1": w1,
-        "b1": b1,
-        "w2": w2,
-        "b2": b2
-    }
-
-    return parameters
-
-
-def model(x, y, n_h, learning_rate, iterations):
-
-    n_x = x.shape[0]
-    n_y = y.shape[0]
-
-    cost_list = []
-
-    parameters = initialize_parameters(n_x, n_h, n_y)
-
-    for i in range(iterations):
-
-        forward_cache = forward_propagation(x, parameters)
-
-        cost = cost_function(forward_cache['a2'], y)
-
-        gradients = backward_prop(x, y, parameters, forward_cache)
-
-        parameters = update_parameters(parameters, gradients, learning_rate)
-
-        cost_list.append(cost)
-
-        if(i % (iterations/10) == 0):
-            print("Cost after", i, "iterations is :", cost)
-
-    return parameters, cost_list
-
-
-if __name__ == '__main__':
-    iterations = 100
-    n_h = 1000
-    learning_rate = 0.02
-    Parameters, Cost_list = model(
-        X_train, Y_train, n_h=n_h, learning_rate=learning_rate, iterations=iterations)
-
-    t = np.arange(0, iterations)
-    plt.plot(t, Cost_list)
-    plt.show()
+    plot_cost_epoch(sse, e)
