@@ -45,7 +45,7 @@ def forward_propagation(weight1, bias1, weight2, bias2, X):
     return Z1, A1, Z2, A2
 
 
-def ReLU_deriv(Z):
+def relu_derivative(Z):
     return Z > 0
 
 
@@ -61,7 +61,7 @@ def backward_propagation(Z1, A1, Z2, A2, weight1, weight2, X, Y):
     dZ2 = A2 - one_hot_Y
     derivativeWeight2 = 1 / m * dZ2.dot(A1.T)
     db2 = 1 / m * np.sum(dZ2)
-    dZ1 = weight2.T.dot(dZ2) * ReLU_deriv(Z1)
+    dZ1 = weight2.T.dot(dZ2) * relu_derivative(Z1)
     derivativeWeight1 = 1 / m * dZ1.dot(X.T)
     db1 = 1 / m * np.sum(dZ1)
     return derivativeWeight1, db1, derivativeWeight2, db2
