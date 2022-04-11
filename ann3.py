@@ -21,9 +21,9 @@ _, m_train = X_train.shape
 
 
 def init_params():
-    weight1 = np.random.rand(40, 45) - 0.5
-    bias1 = np.random.rand(40, 1) - 0.5
-    weight2 = np.random.rand(10, 40) - 0.5
+    weight1 = np.random.rand(5, 45) - 0.5
+    bias1 = np.random.rand(5, 1) - 0.5
+    weight2 = np.random.rand(10, 5) - 0.5
     bias2 = np.random.rand(10, 1) - 0.5
     return weight1, bias1, weight2, bias2
 
@@ -37,7 +37,7 @@ def softmax(Z):
     return A
 
 
-def forward_prop(weight1, bias1, weight2, bias2, X):
+def forward_propagation(weight1, bias1, weight2, bias2, X):
     Z1 = weight1.dot(X) + bias1
     A1 = ReLU(Z1)
     Z2 = weight2.dot(A1) + bias2
@@ -56,7 +56,7 @@ def one_hot(Y):
     return one_hot_Y
 
 
-def backward_prop(Z1, A1, Z2, A2, weight1, weight2, X, Y):
+def backward_propagation(Z1, A1, Z2, A2, weight1, weight2, X, Y):
     one_hot_Y = one_hot(Y)
     dZ2 = A2 - one_hot_Y
     derivativeWeight2 = 1 / m * dZ2.dot(A1.T)
@@ -89,8 +89,8 @@ def get_accuracy(predictions, Y):
 def gradient_descent(X, Y, alpha, iterations):
     weight1, bias1, weight2, bias2 = init_params()
     for i in range(iterations):
-        Z1, A1, Z2, A2 = forward_prop(weight1, bias1, weight2, bias2, X)
-        derivativeWeight1, db1, derivativeWeight2, db2 = backward_prop(
+        Z1, A1, Z2, A2 = forward_propagation(weight1, bias1, weight2, bias2, X)
+        derivativeWeight1, db1, derivativeWeight2, db2 = backward_propagation(
             Z1, A1, Z2, A2, weight1, weight2, X, Y)
         weight1, bias1, weight2, bias2 = update_params(
             weight1, bias1, weight2, bias2, derivativeWeight1, db1, derivativeWeight2, db2, alpha)
@@ -102,7 +102,7 @@ def gradient_descent(X, Y, alpha, iterations):
 
 
 def make_predictions(X, weight1, bias1, weight2, bias2):
-    _, _, _, A2 = forward_prop(weight1, bias1, weight2, bias2, X)
+    _, _, _, A2 = forward_propagation(weight1, bias1, weight2, bias2, X)
     predictions = get_predictions(A2)
     return predictions
 
@@ -120,7 +120,7 @@ def test_prediction(index, weight1, bias1, weight2, bias2):
 
 
 if __name__ == '__main__':
-    epoch = 50
+    epoch = 500
     learn_rate = 0.1
     w1, b1, w2, b2 = gradient_descent(
         X_train, Y_train, learn_rate, epoch)
