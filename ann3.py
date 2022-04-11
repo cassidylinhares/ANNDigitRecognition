@@ -79,6 +79,10 @@ def get_predictions(A2):
     return np.argmax(A2, 0)
 
 
+def sum_square_error(prediction, label):
+    return np.sum(np.square(label-prediction))
+
+
 def get_accuracy(predictions, Y):
     print("Predictions vs Actual: ", predictions, Y)
     print(f"Sum of Square Error: {sum_square_error(predictions, Y)}")
@@ -86,29 +90,29 @@ def get_accuracy(predictions, Y):
     return np.sum(predictions == Y) / Y.size
 
 
-def gradient_descent(X, Y, alpha, iterations):
+def gradient_descent(X, Y, alpha, epoch):
+    sse = []
     weight1, bias1, weight2, bias2 = init_params()
-    for i in range(iterations):
+    for i in range(epoch):
         Z1, A1, Z2, A2 = forward_propagation(weight1, bias1, weight2, bias2, X)
         derivativeWeight1, db1, derivativeWeight2, db2 = backward_propagation(
             Z1, A1, Z2, A2, weight1, weight2, X, Y)
         weight1, bias1, weight2, bias2 = update_params(
             weight1, bias1, weight2, bias2, derivativeWeight1, db1, derivativeWeight2, db2, alpha)
+        predictions = get_predictions(A2)
+        sse.append(sum_square_error(predictions, Y))
+
         if i % 10 == 0:
             print("Epcoh: ", i)
-            predictions = get_predictions(A2)
             print(f"Accuracy: {get_accuracy(predictions, Y)}")
-    return weight1, bias1, weight2, bias2
+
+    return weight1, bias1, weight2, bias2, sse
 
 
 def make_predictions(X, weight1, bias1, weight2, bias2):
     _, _, _, A2 = forward_propagation(weight1, bias1, weight2, bias2, X)
     predictions = get_predictions(A2)
     return predictions
-
-
-def sum_square_error(prediction, label):
-    return np.sum(np.square(label-prediction))
 
 
 def test_prediction(index, weight1, bias1, weight2, bias2):
@@ -119,18 +123,24 @@ def test_prediction(index, weight1, bias1, weight2, bias2):
     print("Actual: ", label)
 
 
+def plot_epoch_error(epochs, sse):
+    plt.plot(epochs, sse)
+    plt.xlabel('epochs')
+    plt.ylabel('sum square error')
+
+    plt.show()
+
+
 if __name__ == '__main__':
     epoch = 500
+    epochs = [i for i in range(1, epoch+1)]
     learn_rate = 0.1
-    w1, b1, w2, b2 = gradient_descent(
+
+    w1, b1, w2, b2, sse = gradient_descent(
         X_train, Y_train, learn_rate, epoch)
 
     print(f"Weights used: {w1} {w2}")
 
-    # test_prediction(0, w1, b1, w2, b2)
-    # test_prediction(1, w1, b1, w2, b2)
-    # test_prediction(2, w1, b1, w2, b2)
-    # test_prediction(3, w1, b1, w2, b2)
-
     test_prediction_set = make_predictions(X_test, w1, b1, w2, b2)
     get_accuracy(test_prediction_set, Y_test)
+    plot_epoch_error(epochs, sse)
